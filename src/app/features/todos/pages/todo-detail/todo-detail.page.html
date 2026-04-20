@@ -1,0 +1,48 @@
+<ion-header translucent class="ion-margin-top">
+   <ion-toolbar>
+      <ion-buttons slot="start">
+         <ion-back-button defaultHref="/todos"></ion-back-button>
+      </ion-buttons>
+      <ion-title>Detalle</ion-title>
+      <ion-buttons slot="end">
+         <ion-button [disabled]="!isDirty()" (click)="save()">Guardar</ion-button>
+      </ion-buttons>
+   </ion-toolbar>
+</ion-header>
+
+@if (todo(); as t) {
+<ion-content class="ion-padding">
+   <ion-list>
+      <ion-item>
+         <ion-input label="Título" labelPlacement="stacked" [value]="title()" (ionInput)="title.set($event.detail.value!); isDirty.set(true)"> </ion-input>
+      </ion-item>
+
+      <ion-item>
+         <ion-textarea label="Descripción" labelPlacement="stacked" [rows]="4" [value]="description()" (ionInput)="description.set($event.detail.value!); isDirty.set(true)"> </ion-textarea>
+      </ion-item>
+
+      <ion-item>
+         <ion-select label="Prioridad" labelPlacement="stacked" [value]="priority()" (ionChange)="priority.set($event.detail.value); isDirty.set(true)">
+            <ion-select-option value="low">Baja</ion-select-option>
+            <ion-select-option value="medium">Media</ion-select-option>
+            <ion-select-option value="high">Alta</ion-select-option>
+         </ion-select>
+      </ion-item>
+
+      <ion-item lines="none">
+         <ion-label>Completada</ion-label>
+         <ion-toggle slot="end" [checked]="t.status === 'completed'" (ionChange)="facade.toggleTodo(t.id)"> </ion-toggle>
+      </ion-item>
+   </ion-list>
+
+   <ion-text color="medium" class="ion-padding-start" style="font-size: 12px"> Creado: {{ t.createdAt | date:'dd/MM/yyyy HH:mm' }} </ion-text>
+
+   <ion-row class="ion-justify-content-center ion-align-items-center">
+      <ion-button expand="block" color="primary" fill="outline" class="ion-margin-top button" (click)="returnToList()"> Cancelar </ion-button>
+      <ion-button expand="block" color="danger" fill="outline" class="ion-margin-top button" (click)="delete()">
+         <ion-icon slot="start" name="trash-outline"></ion-icon>
+         Eliminar tarea
+      </ion-button>
+   </ion-row>
+</ion-content>
+}

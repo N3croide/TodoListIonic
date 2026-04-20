@@ -1,20 +1,51 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
+<!-- SIDEBAR - SIBLING del contenido -->
+<ion-menu contentId="main" type="overlay" id="main-menu" [side]>
+   <ion-header>
+      <ion-toolbar>
+         <ion-title>Tareas</ion-title>
+         <ion-buttons slot="end">
+            <ion-menu-toggle>
+               <ion-button fill="clear" (click)="closeMenu()" aria-label="Cerrar menú">
+                  <ion-icon name="close"></ion-icon>
+               </ion-button>
+            </ion-menu-toggle>
+         </ion-buttons>
+      </ion-toolbar>
+   </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+   <ion-content>
+      <ion-list inset="true">
+         <ion-menu-toggle auto-hide="true">
+            <ion-item routerLink="/todos" routerDirection="root">
+               <ion-icon name="list-outline" slot="start"></ion-icon>
+               <ion-label>Tareas</ion-label>
+            </ion-item>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
-  </div>
-</ion-content>
+            @if (categoriesEnabled()) {
+            <ion-item routerLink="/categories" routerDirection="root">
+               <ion-icon name="pricetag-outline" slot="start"></ion-icon>
+               <ion-label>Categorias</ion-label>
+            </ion-item>
+            }
+         </ion-menu-toggle>
+      </ion-list>
+   </ion-content>
+</ion-menu>
+
+<!-- MAIN AREA - SIBLING del menu -->
+<div id="main" class="ion-page">
+   <!-- HEADER -->
+   <ion-header>
+      <ion-toolbar>
+         <ion-buttons slot="start">
+            <ion-menu-button aria-label="Abrir menú"></ion-menu-button>
+         </ion-buttons>
+         <ion-title>Tareas</ion-title>
+      </ion-toolbar>
+   </ion-header>
+
+   <ion-content fullscreen class="workspace">
+<!-- Sacá este bloque si no necesitás el header condensable -->
+      <ion-router-outlet></ion-router-outlet>
+   </ion-content>
+</div>

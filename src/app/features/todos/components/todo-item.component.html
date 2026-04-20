@@ -1,0 +1,34 @@
+<ion-item-sliding #slidingItem (ionDrag)="onSlidingEvent($event)">
+   <ion-item lines="full" class="">
+      <ion-checkbox class="ion-margin-end" slot="start" [checked]="todo().status === 'completed'" (ionChange)="toggle.emit()" aria-label="Completar"></ion-checkbox>
+
+      <ion-label>
+         <h2 [style.textDecoration]="todo().status === 'completed' ? 'line-through' : 'none'" [style.opacity]="todo().status === 'completed' ? 0.4 : 1" style="margin-bottom: 8px">
+            {{ todo().title }}
+         </h2>
+         @if (todo().description) {
+            <p style="margin-bottom: 8px" [style.textDecoration]="todo().status === 'completed' ? 'line-through' : 'none'">{{ todo().description }}</p>
+         }
+      </ion-label>
+      <ion-label slot="end" style="display: flex; flex-direction: column; align-items: flex-end; width: 48px; gap: 4px">
+         <ion-badge [color]="priorityColor()" style="min-width: 32px; text-align: center">
+            {{ todo().priority }}
+         </ion-badge>
+
+         <ion-icon name="arrow-back-outline" color="medium" class="animated" style="font-size: 1rem" [style.transform]="isSlidingOpen() ? 'rotate(180deg)' : 'none'"> ></ion-icon>
+
+         <ion-note color="medium" style="font-size: 1rem">
+            {{ todo().createdAt | date: "dd/MM/yy" }}
+         </ion-note>
+      </ion-label>
+   </ion-item>
+
+   <ion-item-options side="end" class="ion-padding-vertical">
+      <ion-item-option color="primary" (click)="edit.emit()">
+         <ion-icon slot="icon-only" name="pencil-sharp"></ion-icon>
+      </ion-item-option>
+      <ion-item-option color="danger" expandable (click)="delete.emit()">
+         <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+      </ion-item-option>
+   </ion-item-options>
+</ion-item-sliding>

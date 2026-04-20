@@ -15,6 +15,37 @@
       "sourceRoot": "src",
       "prefix": "app",
       "architect": {
+        "ionic-cordova-build": {
+          "builder": "@ionic/cordova-builders:cordova-build",
+          "options": {
+            "browserTarget": "app:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "app:build:production"
+            },
+            "development": {
+              "browserTarget": "app:build:development"
+            }
+          }
+        },
+        "ionic-cordova-serve": {
+          "builder": "@ionic/cordova-builders:cordova-serve",
+          "options": {
+            "browserTarget": "app:serve",
+            "cordovaBuildTarget": "app:ionic-cordova-build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "app:serve:production",
+              "cordovaBuildTarget": "app:ionic-cordova-build:production"
+            },
+            "development": {
+              "browserTarget": "app:serve:development",
+              "cordovaBuildTarget": "app:ionic-cordova-build:development"
+            }
+          }
+        },
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
@@ -23,9 +54,7 @@
               "browser": ""
             },
             "index": "src/index.html",
-            "polyfills": [
-              "src/polyfills.ts"
-            ],
+            "polyfills": ["src/polyfills.ts"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -41,6 +70,7 @@
           },
           "configurations": {
             "production": {
+              "optimization": false,
               "budgets": [
                 {
                   "type": "initial",
