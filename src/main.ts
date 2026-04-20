@@ -6,13 +6,8 @@ import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
 import { FirebaseX } from '@awesome-cordova-plugins/firebase-x/ngx';
 import { HTTP } from '@awesome-cordova-plugins/http/ngx';
+import { DbProvider } from './app/db.providers';
 
 bootstrapApplication(AppComponent, {
-   providers: [
-      {provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-      provideIonicAngular(),
-      provideRouter(routes, withPreloading(PreloadAllModules)),
-      FirebaseX,
-      HTTP
-   ]
+    providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }, provideIonicAngular(), provideRouter(routes, withPreloading(PreloadAllModules)), FirebaseX, HTTP, DbProvider()],
 });

@@ -1,69 +1,71 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Todo, TodoPriority, TodoStatus, createTodo } from '../models/todo.model';
-import { StorageService } from 'src/app/shared/services/storage.service';
+import { Todo, TodoPriority, TodoStatus } from '../models/todo.model';
+import { TodoRepository } from '../repositories/todo.repository';
 
 export type FilterType = 'all' | TodoStatus;
 
-const STORAGE_KEY = 'todos_app';
-
 @Injectable({ providedIn: 'root' })
 export class TodoService {
-   private readonly storage = inject(StorageService);
+    private readonly todoRepository = inject(TodoRepository);
 
-   // ── Estado ────────────────────────────────────────────────────────────────
-   private readonly _todos = signal<Todo[]>(this.loadFromStorage());
-   private readonly _filter = signal<FilterType>('all');
+    // ── Estado ───────────────────────────────────────────────
+    private readonly _todos = signal<Todo[]>([]);
+    private readonly _filter = signal<FilterType>('all');
 
-   // ── Computed públicos ─────────────────────────────────────────────────────
-   readonly filter = this._filter.asReadonly();
-   readonly pendingCount = computed(() => this._todos().filter((t) => t.status === 'pending').length);
-   readonly completedCount = computed(() => this._todos().filter((t) => t.status === 'completed').length);
-   readonly allCount = computed(() => this._todos().length);
-   readonly filteredTodos = computed(() => {
-      const f = this._filter();
-      return f === 'all' ? this._todos() : this._todos().filter((t) => t.status === f);
-   });
+    // ── Computed públicos ────────────────────────────────────
+    readonly filter = this._filter.asReadonly();
 
-   // ── Acciones ──────────────────────────────────────────────────────────────
-   add(title: string, description = '', priority: TodoPriority = 'medium', categoryId: string): void {
-      if (!title.trim()) return;
-      this.mutate((todos) => [...todos, createTodo({ title, description, priority }, categoryId)]);
-   }
+    readonly pendingCount = computed(() => this._todos().filter((t) => t.status === 'pending').length);
 
-   toggle(id: string): void {
-      this.mutate((todos) => todos.map((t) => (t.id === id ? { ...t, status: t.status === 'pending' ? 'completed' : ('pending' as TodoStatus) } : t)));
-   }
+    readonly completedCount = computed(() => this._todos().filter((t) => t.status === 'completed').length);
 
-   update(id: string, changes: Partial<Pick<Todo, 'title' | 'description' | 'priority'>>): void {
-      this.mutate((todos) => todos.map((t) => (t.id === id ? { ...t, ...changes } : t)));
-   }
+    readonly allCount = computed(() => this._todos().length);
 
-   remove(id: string): void {
-      this.mutate((todos) => todos.filter((t) => t.id !== id));
-   }
+    readonly filteredTodos = computed(() => {
+        const f = this._filter();
+        return f === 'all' ? this._todos() : this._todos().filter((t) => t.status === f);
+    });
 
-   getById(id: string): Todo | undefined {
-      return this._todos().find((t) => t.id === id);
-   }
+    // ── Inicialización ───────────────────────────────────────
+    async load(): Promise<void> {
+        const todos = await this.todoRepository.findAll();
+        this._todos.set(todos);
+    }
 
-   setFilter(filter: FilterType): void {
-      this._filter.set(filter);
-   }
+    // ── Acciones ─────────────────────────────────────────────
+    async add(title: string,  categoryId: string, priority: TodoPriority = 'medium', description = ''): Promise<void> {
+        if (!title.trim()) return;
+        const todo = await this.todoRepository.add(title, description, priority, categoryId);
+        this._todos.update((todos) => [...todos, todo]);
+    }
 
-   allTodos(): Todo[] {
-      return this._todos();
-   }
+    async toggle(id: string): Promise<void> {
+        const current = this.getById(id);
+        if (!current) return;
+        const newStatus: TodoStatus = current.status === 'pending' ? 'completed' : 'pending';
+        await this.todoRepository.toggle(id);
+        this._todos.update((todos) => todos.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
+    }
 
-   // ── Privado ───────────────────────────────────────────────────────────────
-   private mutate(fn: (todos: Todo[]) => Todo[]): void {
-      const next = fn(this._todos());
-      this._todos.set(next);
-      this.storage.set(STORAGE_KEY, next);
-   }
+    async update(id: string, changes: Partial<Pick<Todo, 'title' | 'description' | 'priority'>>): Promise<void> {
+        await this.todoRepository.update(id, changes);
+        this._todos.update((todos) => todos.map((t) => (t.id === id ? { ...t, ...changes } : t)));
+    }
 
-   private loadFromStorage(): Todo[] {
-      const raw = this.storage.get<Todo[]>(STORAGE_KEY);
-      if (!raw) return [];
-      return raw.map((t) => ({ ...t, createdAt: new Date(t.createdAt) }));
-   }
+    async remove(id: string): Promise<void> {
+        await this.todoRepository.remove(id);
+        this._todos.update((todos) => todos.filter((t) => t.id !== id));
+    }
+
+    getById(id: string): Todo | undefined {
+        return this._todos().find((t) => t.id === id);
+    }
+
+    allTodos(): Todo[] {
+        return this._todos();
+    }
+
+    setFilter(filter: FilterType): void {
+        this._filter.set(filter);
+    }
 }
