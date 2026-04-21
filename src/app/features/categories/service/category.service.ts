@@ -1,45 +1,44 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Category, createCategory } from '../models/category.model';
-import { StorageService } from 'src/app/shared/services/storage.service';
+import { Category } from '../models/category.model';
+import { CategoryRepository } from '../repositories/category.repository';
 
 @Injectable({ providedIn: 'root' })
 export class CategoryService {
-   private readonly storage = inject(StorageService);
-   private readonly storageKey = 'categories';
+   private readonly repo = inject(CategoryRepository);
 
-   private readonly _categories = signal<Category[]>(this.loadFromStorage());
+   private readonly _categories = signal<Category[]>([]);
 
-   // ── Computed públicos ─────────────────────────────────────────────────────
    readonly categories = this._categories.asReadonly();
 
-   // ── Acciones ──────────────────────────────────────────────────────────────
-   add(name: string): void {
+   // ── Inicialización ────────────────────────────────────────
+   async load(): Promise<void> {
+      try{
+         const cats = await this.repo.findAll();
+         this._categories.set(cats);
+      }catch(error){
+         let err = JSON.stringify(error);
+         alert('Error cargando categorías:\n ' + err);
+      }
+   }
+
+   // ── Acciones ──────────────────────────────────────────────
+   async add(name: string): Promise<void> {
       if (!name.trim()) return;
-      this.mutate((cats) => [...cats, createCategory(name)]);
+      const category = await this.repo.add(name);
+      this._categories.update((cats) => [...cats, category]);
    }
 
-   update(id: string, changes: Partial<Pick<Category, 'name'>>): void {
-      this.mutate((cats) => cats.map((c) => (c.id === id ? { ...c, ...changes } : c)));
+   async update(id: string, changes: Partial<Pick<Category, 'name'>>): Promise<void> {
+      await this.repo.update(id, changes);
+      this._categories.update((cats) => cats.map((c) => (c.id === id ? { ...c, ...changes } : c)));
    }
 
-   remove(id: string): void {
-      this.mutate((cats) => cats.filter((c) => c.id !== id));
+   async remove(id: string): Promise<void> {
+      await this.repo.remove(id);
+      this._categories.update((cats) => cats.filter((c) => c.id !== id));
    }
 
    getById(id: string): Category | undefined {
       return this._categories().find((c) => c.id === id);
-   }
-
-   // ── Privado ───────────────────────────────────────────────────────────────
-   private mutate(fn: (cats: Category[]) => Category[]): void {
-      const next = fn(this._categories());
-      this._categories.set(next);
-      this.storage.set(this.storageKey, next);
-   }
-
-   private loadFromStorage(): Category[] {
-      const raw = this.storage.get<Category[]>(this.storageKey);
-      if (!raw) return [];
-      return raw.map((c) => ({ ...c, createdAt: new Date(c.createdAt) }));
    }
 }

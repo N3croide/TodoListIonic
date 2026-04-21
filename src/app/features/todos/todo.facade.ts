@@ -6,6 +6,10 @@ import { CategoryFacade } from '../categories/category.facade';
 
 @Injectable({ providedIn: 'root' })
 export class TodoFacade {
+   constructor() {
+      this.todoService.load();
+   }
+
    private readonly todoService = inject(TodoService);
    private readonly categoryFacade = inject(CategoryFacade);
 
@@ -25,12 +29,12 @@ export class TodoFacade {
       const categoryId = this.selectedCategoryId();
 
       if (!categoryId) return todos;
-      return todos.filter(todo => todo.categoryId === categoryId);
+      return todos.filter((todo) => todo.categoryId === categoryId);
    });
 
    // ── Acciones de lista ─────────────────────────────────────────────────────
-   addTodo(title: string, description: string, priority: TodoPriority, categoryId: string): void {
-      this.todoService.add(title, description, priority, categoryId);
+   addTodo(title: string, categoryId: string, priority: TodoPriority, description: string): void {
+      this.todoService.add(title, categoryId, priority, description);
    }
 
    toggleTodo(id: string): void {

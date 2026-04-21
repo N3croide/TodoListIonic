@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import * as CryptoJS from 'crypto-js';
+import CryptoJS from 'crypto-js';
 import { environment } from 'src/environments/environment.prod';
 
 const SECRET_KEY = environment.storageKey;

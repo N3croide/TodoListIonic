@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, signal, WritableSignal, DestroyRef } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal, WritableSignal, DestroyRef, OnInit, computed } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IonicModule, AlertController } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -14,98 +14,102 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 addIcons({ add, addCircleOutline, checkmarkDoneCircleOutline });
 
 @Component({
-    selector: 'app-todos-list',
-    standalone: true,
-    changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FormsModule, IonicModule, TodoItemComponent, ReactiveFormsModule],
-    templateUrl: './todos-list.page.html',
-    styleUrl: './todos-list.page.scss',
+   selector: 'app-todos-list',
+   standalone: true,
+   changeDetection: ChangeDetectionStrategy.OnPush,
+   imports: [FormsModule, IonicModule, TodoItemComponent, ReactiveFormsModule],
+   templateUrl: './todos-list.page.html',
+   styleUrl: './todos-list.page.scss',
 })
-export class TodosListPage {
-    form: FormGroup;
-    readonly facade = inject(TodoFacade);
-    readonly categoriesFacade = inject(CategoryFacade);
-    readonly alertController = inject(AlertController);
+export class TodosListPage implements OnInit {
+   form: FormGroup;
+   readonly facade = inject(TodoFacade);
+   readonly categoriesFacade = inject(CategoryFacade);
+   readonly alertController = inject(AlertController);
 
-    readonly categories = this.categoriesFacade.categories();
+   readonly categories = computed(() => this.categoriesFacade.categories());
 
-    breakpointsCreationgModal = signal(window.innerHeight < 600 ? [0, 1] : [0, 0.6, 1]);
+   breakpointsCreationgModal = signal(window.innerHeight < 600 ? [0, 1] : [0, 0.6, 1]);
 
-    private readonly destroyRef = inject(DestroyRef);
+   private readonly destroyRef = inject(DestroyRef);
 
-    getBreakpoints() {
-        return window.innerHeight < 600 ? [0, 1] : [0, 0.6, 1];
-    }
+   getBreakpoints() {
+      return window.innerHeight < 600 ? [0, 1] : [0, 0.6, 1];
+   }
 
-    constructor(private readonly fb: FormBuilder) {
-        this.form = this.fb.group({
-            title: ['', Validators.required],
-            description: [''],
-            priority: ['medium'],
-            categoryId: ['', Validators.required],
-        });
+   async ngOnInit() {
+      await this.categoriesFacade.load();
+   }
 
-        fromEvent(window, 'resize')
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(() => {
-                this.breakpointsCreationgModal.set(this.getBreakpoints());
-            });
-    }
+   constructor(private readonly fb: FormBuilder) {
+      this.form = this.fb.group({
+         title: ['', Validators.required],
+         description: [null],
+         priority: ['medium'],
+         categoryId: ['', Validators.required],
+      });
 
-    setModalState(state: boolean) {
-        this.isModalOpen.set(state);
-    }
+      fromEvent(window, 'resize')
+         .pipe(takeUntilDestroyed(this.destroyRef))
+         .subscribe(() => {
+            this.breakpointsCreationgModal.set(this.getBreakpoints());
+         });
+   }
 
-    newTitle = '';
-    newDescription = '';
-    newPriority: TodoPriority = 'medium';
-    isModalOpen: WritableSignal<boolean> = signal(false);
+   setModalState(state: boolean) {
+      this.isModalOpen.set(state);
+   }
 
-    onFilter(e: CustomEvent): void {
-        this.facade.setFilter(e.detail.value as FilterType);
-    }
+   newTitle = '';
+   newDescription = '';
+   newPriority: TodoPriority = 'medium';
+   isModalOpen: WritableSignal<boolean> = signal(false);
 
-    isDeleteAlertOpen = false;
+   onFilter(e: CustomEvent): void {
+      this.facade.setFilter(e.detail.value as FilterType);
+   }
 
-    async deleteTodo(todo: Todo): Promise<void> {
-        if (this.isDeleteAlertOpen) {
-            return; // Ya hay un alert abierto, no abras otro
-        }
-        this.isDeleteAlertOpen = true;
+   isDeleteAlertOpen = false;
 
-        const alert = await this.alertController.create({
-            header: 'Confirmar eliminación',
-            message: `Estas seguro que quieres borrar la tarea: "${todo.title}"?`,
-            buttons: [
-                {
-                    text: 'Cancelar',
-                    role: 'cancel',
-                    handler: () => {
-                        this.isDeleteAlertOpen = false;
-                    },
-                },
-                {
-                    text: 'Borrar',
-                    role: 'destructive',
-                    handler: () => {
-                        this.facade.removeTodo(todo.id);
-                        this.isDeleteAlertOpen = false;
-                    },
-                },
-            ],
-        });
+   async deleteTodo(todo: Todo): Promise<void> {
+      if (this.isDeleteAlertOpen) {
+         return; // Ya hay un alert abierto, no abras otro
+      }
+      this.isDeleteAlertOpen = true;
 
-        alert.onDidDismiss().then(() => {
-            this.isDeleteAlertOpen = false;
-        });
+      const alert = await this.alertController.create({
+         header: 'Confirmar eliminación',
+         message: `Estas seguro que quieres borrar la tarea: "${todo.title}"?`,
+         buttons: [
+            {
+               text: 'Cancelar',
+               role: 'cancel',
+               handler: () => {
+                  this.isDeleteAlertOpen = false;
+               },
+            },
+            {
+               text: 'Borrar',
+               role: 'destructive',
+               handler: () => {
+                  this.facade.removeTodo(todo.id);
+                  this.isDeleteAlertOpen = false;
+               },
+            },
+         ],
+      });
 
-        await alert.present();
-    }
+      alert.onDidDismiss().then(() => {
+         this.isDeleteAlertOpen = false;
+      });
 
-    submit(): void {
-        let data: TodoForm = this.form.getRawValue();
-        if (this.form.invalid) return;
-        this.facade.addTodo(data.title, data.description, data.priority, data.categoryId);
-        this.isModalOpen.set(false);
-    }
+      await alert.present();
+   }
+
+   submit(): void {
+      let data: TodoForm = this.form.getRawValue();
+      if (this.form.invalid) return;
+      this.facade.addTodo(data.title, data.categoryId, data.priority, data.description);
+      this.isModalOpen.set(false);
+   }
 }

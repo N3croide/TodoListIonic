@@ -33,7 +33,7 @@ export class TodoService {
     }
 
     // ── Acciones ─────────────────────────────────────────────
-    async add(title: string,  categoryId: string, priority: TodoPriority = 'medium', description = ''): Promise<void> {
+    async add(title: string, categoryId: string, priority: TodoPriority = 'medium', description = ''): Promise<void> {
         if (!title.trim()) return;
         const todo = await this.todoRepository.add(title, description, priority, categoryId);
         this._todos.update((todos) => [...todos, todo]);

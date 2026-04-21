@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { ITodoRepository } from './todo.respository';
-import { Todo } from '../entities/todo.entity';
+import { Todo } from 'src/app/features/todos/models/todo.model';
 
 const STORAGE_KEY = 'todos_app';
 

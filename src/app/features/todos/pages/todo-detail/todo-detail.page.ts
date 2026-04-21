@@ -8,6 +8,7 @@ import { IonicModule } from '@ionic/angular';
 import { TodoFacade } from '../../todo.facade';
 import { Todo, TodoPriority } from '../../models/todo.model';
 import { DatePipe } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 addIcons({ trashOutline });
 
@@ -15,18 +16,29 @@ addIcons({ trashOutline });
    selector: 'app-todo-detail',
    standalone: true,
    changeDetection: ChangeDetectionStrategy.OnPush,
-   imports: [IonicModule, DatePipe],
+   imports: [IonicModule, DatePipe, ReactiveFormsModule],
    templateUrl: './todo-detail.page.html',
-   styles:`
-      .button{
+   styles: `
+      .button {
          height: 40px;
          margin: 0 20px;
          width: calc(50% - 40px);
          max-width: 200px;
       }
-`
+   `,
 })
 export class TodoDetailPage implements OnInit {
+   form: FormGroup;
+   todo = signal<Todo | null>(null);
+
+   constructor(private readonly fb: FormBuilder) {
+      this.form = this.fb.group({
+         title: ['', Validators.required],
+         description: [''],
+         priority: ['medium'],
+         categoryId: ['', Validators.required],
+      });
+   }
 
    returnToList() {
       return this.facade.goToList();
@@ -35,39 +47,40 @@ export class TodoDetailPage implements OnInit {
    readonly facade = inject(TodoFacade);
    private readonly route = inject(ActivatedRoute);
 
-   readonly todo = signal<Todo | undefined>(undefined);
-   readonly title = signal('');
-   readonly description = signal('');
-   readonly priority = signal<TodoPriority>('medium');
-   readonly isDirty = signal(false);
-
    ngOnInit(): void {
       const id = this.route.snapshot.paramMap.get('id')!;
       const todo = this.facade.getTodoById(id);
+
       if (!todo) {
          this.facade.goToList();
          return;
       }
 
       this.todo.set(todo);
-      this.title.set(todo.title);
-      this.description.set(todo.description);
-      this.priority.set(todo.priority);
+
+      this.form.patchValue({
+         id: todo.id,
+         title: todo.title,
+         description: todo.description,
+         priority: todo.priority,
+         categoryId: todo.categoryId,
+      });
    }
 
    save(): void {
-      const t = this.todo();
+      const t = this.form.getRawValue() as Pick<Todo, 'id' | 'title' | 'description' | 'priority'>;
+
       if (!t) return;
       this.facade.updateTodo(t.id, {
-         title: this.title(),
-         description: this.description(),
-         priority: this.priority(),
+         title: t.title,
+         description: t.description,
+         priority: t.priority as TodoPriority,
       });
       this.facade.goToList();
    }
 
    delete(): void {
-      const t = this.todo();
+      const t = this.form.getRawValue() as Pick<Todo, 'id'>;
       if (!t) return;
       this.facade.removeTodo(t.id);
       this.facade.goToList();
